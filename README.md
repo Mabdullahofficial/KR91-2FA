@@ -1,39 +1,67 @@
-## ApiGateway-Lambda-DynamoDB-SES
+Steps to Deploy the Solution:
 
-### Steps to Deploy the Solution:
+1. Clone the Repository
+Access the Solution directory by navigating to /KR91-2FA-CCL-Assessment.
+Clone the repository to your local machine by running the following commands:
+bash
+git clone https://github.com/Mabdullahofficial/KR91-2FA-Cybernetic-Controls-Limited-Asseessment.git  
+Cd KR91-2FA-Cybernetic-Controls-Limited-Asseessment/KR91-2FA-CCL-Assessment  
+2. Build and Push Docker Images
+Use the provided Dockerfiles to build and push the container images for the token generation and validation services.
+Run the following commands:
+Build and push the Token Generation service:
+bash
 
-1. **Clone the Repository:**
-   - Access the Solution-2 directory by navigating to `/CCLDevOpsTask/Solution-2-ApiGateway-Lambda-dynamodb-SES`.
-   - Clone the repository to your local machine by running the following command:
-     ```bash
-     git clone https://github.com/sajidrai/CCLDevOpsTask.git
-     cd CCLDevOpsTask/Solution-2-ApiGateway-Lambda-dynamodb-SES
-     ```
+cd token-generation  
+docker build -t <your-dockerhub-username>/token-generation .  
+docker push <your-dockerhub-username>/token-generation  
 
-2. **Upload Lambda Function ZIPs to S3:**
-   - Run the `upload_files_to_s3.sh` script to upload the Lambda function ZIPs and JWT Python library ZIP to the S3 bucket. This script will create the necessary ZIP files and upload them to the specified S3 bucket, make sure to update your secret key, private key and region in the file before running this script.
-     ```bash
-     ./upload_files_to_s3.sh
-     ```
+Build and push the Token Validation service:
+bash
 
-3. **Deploy Infrastructure using AWS Console:**
-   - Go to the AWS Management Console and navigate to the CloudFormation service.
-   - Click on "Create stack" and choose "With new resources (standard)".
-   - Upload the `apiGatewayLambdaDynamodbSESSolution.yaml` CloudFormation template.
-   - Fill in the necessary parameters like Region, AccountId, EnvironmentName, UserTokensTableName, SenderEmail, SecretKeyJwtToken, and S3BucketName.
-   - Proceed with the stack creation by following the on-screen instructions.
-   - Once the stack creation is complete, the infrastructure components including the DynamoDB table, Lambda functions, and API Gateway will be deployed.
+cd ../token-validation  
+docker build -t <your-dockerhub-username>/token-validation .  
+docker push <your-dockerhub-username>/token-validation  
+3. Deploy the Infrastructure Using AWS CloudFormation
+Go to the AWS Management Console and navigate to the CloudFormation service.
+Click on "Create stack" and select "With new resources (standard)".
+Upload the ecsFargateDynamoDbSnsSolution.yaml CloudFormation template from the repository.
+Provide the necessary parameters:
+EnvironmentName: Example - dev
+DynamoDBTableName: Example - Tokens
+SNSTopicName: Example - 2FA-SNSTopic
+TokenGenerationImageURI: URI of the token-generation image pushed to Docker Hub or ECR.
+TokenValidationImageURI: URI of the token-validation image pushed to Docker Hub or ECR.
+ClusterName: Name of your ECS cluster.
+Proceed with the stack creation by following the on-screen instructions.
+Once the stack creation is complete, the following infrastructure components will be deployed:
+An ECS cluster with two Fargate tasks for token generation and validation.
+A DynamoDB table to store and manage tokens.
+An SNS topic to send tokens to user email or phone numbers.
+API Gateway for exposing RESTful APIs to interact with the services.
 
-3. **Testing**
-   - Once the stack is completed we can copy the output variable value `TokenCreationAPIURL` and call it using postman by providing json object in the body as 
-   `{"email": "emailAddress}`.
-   - Above will send token to email as well as in api response for testing purpose.
-   - To verify token we can call `tokenVerfication` api by copying its link from the outputs with key as `TokenVerificationAPIURL` and provide a verification code in the body as `{"verification_code": "code"}`
-   - This verify the token or gave error based on the token value.
+4. Test the Solution
+Generate Token:
+Copy the TokenCreationAPIURL from the CloudFormation stack outputs.
+Use Postman or curl to call the API:
+bash
 
-### Note:
-- Ensure that the sender email address and the recipient email address for verification code emails are verified in the Amazon SES console under the "Email Addresses" section.
-- Make sure you have the necessary AWS credentials configured on your local machine before running the scripts and CloudFormation commands.
-- Replace placeholders like `<repository_url>`, `<stack_name>`, `<region>`, `<account_id>`, `<environment>`, `<table_name>`, `<sender_email>`, `<jwt_secret>`, and `<s3_bucket_name>` with your actual values.
+curl -X POST -H "Content-Type: application/json" \
+-d '{"user_id": "user123", "phone_number": "+1234567890"}' \
+<TokenCreationAPIURL>  
+The API will return the token in the response and send it to the user's phone number via SNS.
+Validate Token:
+Copy the TokenValidationAPIURL from the CloudFormation stack outputs.
+Use Postman or curl to validate the token:
+bash
 
-Follow these steps to deploy Solution-2 using AWS CloudFormation and effectively manage the Lambda functions, DynamoDB table, and SES integration.
+curl -X POST -H "Content-Type: application/json" \
+-d '{"token": "<token_received_via_sms>"}' \
+<TokenValidationAPIURL>  
+The API will verify the token and return the result (success or error).
+Note
+AWS Credentials: Ensure your local machine is configured with the necessary AWS credentials.
+SNS Configuration: Verify that the phone numbers receiving the messages are confirmed in Amazon SNS.
+Replace placeholders such as <your-dockerhub-username>, <TokenCreationAPIURL>, and <TokenValidationAPIURL> with your actual values.
+Review and customize the parameters in the CloudFormation template (ecsFargateDynamoDbSnsSolution.yaml) as per your requirements.
+
