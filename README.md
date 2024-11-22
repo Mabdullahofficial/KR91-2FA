@@ -10,14 +10,13 @@ Clone the repository to your local machine by running the following commands`.
      ```
 
 2. **Build and Push Docker Images:**
-  - Run the following commands.
-  - 1. Build and push the Token Generation service:
+  - Build and push the Token Generation service:
      ```bash
      cd token-generation  
       docker build -t <your-dockerhub-username>/token-generation .  
       docker push <your-dockerhub-username>/token-generation  
      ```
-  - 2. Build and push the Token Generation service:
+  - Build and push the Token Generation service:
      ```bash
      cd ../token-validation  
       docker build -t <your-dockerhub-username>/token-validation .  
@@ -32,7 +31,7 @@ Clone the repository to your local machine by running the following commands`.
   - Proceed with the stack creation by following the on-screen instructions.
   - Once the stack creation is complete, the infrastructure components including the DynamoDB table, ECS Cluster, and API Gateway will be deployed.
 
-3. **Testing:**
+4. **Testing:**
 
     **Generate Token**
    
